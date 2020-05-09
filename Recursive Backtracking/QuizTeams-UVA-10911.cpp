@@ -1,97 +1,104 @@
 #include <iostream>
-#include <float.h>
+#include <vector>
+#include <limits>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
-int arrayTamanio;
+double calculate_distance(int x1, int y1, int x2, int y2){
+    double r1 = y2 - y1;
+    double r2 = x2 - x1;
+    return sqrt(r1*r1 + r2*r2);
+}
 
-bool hayAlgo(int visitado [], int& i) {
+bool fully_formed(bool* paired, int n){
+    return (find(paired, paired+n, false) == paired+n);
+}
 
-    for(int c = 0; c < arrayTamanio; ++c) {
+bool* find_first(bool* paired, int n) {
+    return find(paired, paired+n, false);
+}
 
-        if(visitado[c] == 0) {
+double get_best(const vector<vector<int>>& students, double& curr_sum, double& min, bool* paired) {
 
-            i = c;
-            return true;
-        }
+    if(curr_sum >= min)
+        return 1;
+
+    if(fully_formed(paired, students.size())) {
+         min = std::min(min, curr_sum);
+         return 1;
     }
 
-    return false;
+    int position_first = (int)(find_first(paired, students.size()) - paired);
+
+    paired[position_first] = true;
+    double distance = 0;
+    for(int i = position_first+1; i < students.size(); ++i) {
+        
+        if(paired[i] == false){
+            paired[i] = true;
+            distance = calculate_distance(students[position_first][0],students[position_first][1], 
+            students[i][0],students[i][1] );
+            curr_sum += distance;
+            get_best(students, curr_sum, min, paired);
+            curr_sum -= distance;
+            paired[i] = false;
+        }
+        
+    }
+
+    paired[position_first] = false;
+
+    return min;
 }
 
 
-void buscarDistancia(double costoActual, int visitado[], int coor[][2], double& D) {
-
-    int i = 0;
-
-    if(!hayAlgo(visitado,i)) {
-
-        if(costoActual < D)
-            D = costoActual;
-
-        return;
-    }
-
-    double distanciaParcial = 0;
-
-    visitado[i] = 1;
-
-    for(int j = i + 1; j < arrayTamanio; ++j) {
-
-        if(visitado[j] == 0) {
-
-            distanciaParcial = sqrt(pow((double)(coor[i][0]-coor[j][0]), 2.0) + pow((double)(coor[i][1]-coor[j][1]), 2.0));
-            costoActual += distanciaParcial;
-
-            //PRUNNING
-            if(costoActual < D) {
-                visitado[j] = 1;
-                buscarDistancia(costoActual, visitado, coor, D);
-                visitado[j] = 0;
-            }
-
-            costoActual -= distanciaParcial;
-        }
-    }
-
-    visitado[i] = 0;
-
-    return;
-}
 
 int main() {
-
+    double MIN = numeric_limits<double>::max();
     int N;
-    int c = 1;
+    int x;
+    int y;
+    double min;
+    double curr_sum;
     string name;
-    int x, y;
-    double D;
-
-    while(cin >> N) {
-
+    vector<vector<int>> students;
+    vector<int> coordinates;
+    int my_case = 1;
+    do{
+        cin>>N;
         if(N == 0)
             break;
 
-        int coor[2*N][2];
-        int visitado[2*N] = {0};
-        arrayTamanio = 2 * N;
-        D = DBL_MAX;
+        bool* paired = new bool[2*N];
 
         for(int i = 0; i < 2*N; ++i) {
+            paired[i] = false;
+            cin>>name>>x>>y;
+            coordinates.push_back(x);
+            coordinates.push_back(y);
+            
+            students.push_back(coordinates);
+            coordinates.clear();
 
-            cin >> name >> x >> y;
-
-            coor[i][0] = x;
-            coor[i][1] = y;
         }
+        //paired[0] = true;
+        //paired[1] = true;
+        //cout<<fully_formed(paired, students.size());
+        //int position_first = (int)(find_first(paired, students.size()) - paired);
+        //cout<<position_first<<endl;
+    
+        curr_sum = 0;
+        min = MIN;
+        //cout<< "Case "<<my_case<<": "<<get_best(students, curr_sum, min, paired)<<endl;     
+        printf("Case %d: %.2f\n", my_case,get_best(students, curr_sum, min, paired));
+        my_case++;
+        delete[] paired;
+        students.clear();
 
-        buscarDistancia(0, visitado, coor, D);
-
-        printf("Case %i: %.2f\n", c, D);
-
-        ++c;
-    }
+    
+    }while(N != 0);
 
     return 0;
 }
